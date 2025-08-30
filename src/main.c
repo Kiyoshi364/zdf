@@ -76,8 +76,6 @@ void distmap_to_canvas(
 }
 
 int main(void) {
-    FILE *out = fopen("img.ppm", "w");
-
     const uint32_t w = WIDTH;
     const uint32_t h = HEIGHT;
     int32_t distmap[WIDTH*HEIGHT];
@@ -98,6 +96,7 @@ int main(void) {
 
     distmap_to_canvas(distmap, w, h, w, canvas, UPSCALE, UPSCALE, w*UPSCALE);
 
+    FILE *out = fopen("img.ppm", "w");
     gen(out, canvas, w*UPSCALE, h*UPSCALE, w*UPSCALE);
     fclose(out);
 
