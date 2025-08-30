@@ -30,6 +30,8 @@ void distmap_to_canvas(
 ) {
     int32_t max_neg = -1;
     int32_t max_pos = -1;
+    const int32_t min_neg = 0x10;
+    const int32_t min_pos = 0x10;
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
@@ -55,9 +57,9 @@ void distmap_to_canvas(
             uint8_t b = 0;
 
             if (d < 0) {
-                b = ((uint32_t) (-d)) * 0xFF / max_neg;
+                b = (((uint32_t) (-d)) + min_neg) * 0xFF / (max_neg + min_neg);
             } else {
-                r = ((uint32_t) d) * 0xFF / max_pos;
+                r = (((uint32_t) d) + min_pos) * 0xFF / (max_pos + min_pos);
             }
             if (-border < d && d < border) {
                 g = 0xFF;
