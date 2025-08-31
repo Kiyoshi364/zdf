@@ -59,7 +59,7 @@ void distmap_to_canvas(
                 r = (ud + min) * 0xFF / (max_pos + min);
             }
             if (ud < border) {
-                g = 0xFF;
+                g = (border - ud) * 0xFF / border;
             }
             const uint32_t color = rgb(r, g, b);
 
