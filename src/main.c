@@ -19,7 +19,7 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 
 void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride);
 
-#define FIXONE 0x8
+#define FIXONE 0x10
 #define WIDTH 32
 #define HEIGHT 24
 #define UPSCALE 0x10
@@ -31,7 +31,7 @@ void distmap_to_canvas(
 ) {
     uint32_t max_neg = 0;
     uint32_t max_pos = 0;
-    const uint32_t min = 0x04;
+    const uint32_t min = 0x10;
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
@@ -54,12 +54,12 @@ void distmap_to_canvas(
             uint8_t b = 0;
 
             if (d < 0) {
-                b = (ud + min) * 0xFF / (max_neg + min);
+                b = (ud * (0xFF - min) / max_neg) + min;
             } else {
-                r = (ud + min) * 0xFF / (max_pos + min);
+                r = (ud * (0xFF - min) / max_pos) + min;
             }
             if (ud < border) {
-                g = (border - ud) * 0xFF / border;
+                g = ((border - ud) * (0xFF - min) / border) + min;
             }
             const uint32_t color = rgb(r, g, b);
 

@@ -24,18 +24,23 @@
 #endif // ZDF_FUNC
 
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
+
 ZDF_INT ZDF_FUNC(circle)(ZDF_INT cx, ZDF_INT cy, ZDF_INT r, ZDF_INT px, ZDF_INT py);
 
 #endif // _ZDF_H_
 
 #ifdef ZDF_IMPLEMENTATION
 
+static inline
+ZDF_LONG ZDF_FUNC(mult)(ZDF_INT a, ZDF_INT b) {
+    return ((ZDF_LONG) a) * ((ZDF_LONG) b);
+}
+
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
     ZDF_LONG acc = 0;
     ZDF_INT res = 0;
     for (ZDF_INT i = (1 << (((ZDF_INT_BITS - 1)/2) + 1 - 1)); 0 < i; i >>= 1) {
-        const ZDF_LONG i_ = (ZDF_LONG) i;
-        const ZDF_LONG new_acc = acc + 2*((ZDF_LONG) res)*i_ + i_*i_;
+        const ZDF_LONG new_acc = acc + 2*ZDF_FUNC(mult)(res, i) + ZDF_FUNC(mult)(i, i);
         if (new_acc <= n) {
             acc = new_acc;
             res += i;
@@ -47,9 +52,11 @@ ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
 }
 
 ZDF_INT ZDF_FUNC(circle)(ZDF_INT cx, ZDF_INT cy, ZDF_INT r, ZDF_INT px, ZDF_INT py) {
-    const ZDF_LONG dx = (ZDF_LONG) (px - cx);
-    const ZDF_LONG dy = (ZDF_LONG) (py - cy);
-    return ZDF_FUNC(lisqrt)(dx*dx + dy*dy) - ((ZDF_LONG) r);
+    const ZDF_INT dx = px - cx;
+    const ZDF_INT dy = py - cy;
+    const ZDF_LONG dxdx = ZDF_FUNC(mult)(dx, dx);
+    const ZDF_LONG dydy = ZDF_FUNC(mult)(dy, dy);
+    return ZDF_FUNC(lisqrt)(dxdx + dydy) - r;
 }
 
 #endif // ZDF_IMPLEMENTATION
