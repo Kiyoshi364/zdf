@@ -75,20 +75,44 @@ void distmap_to_canvas(
     }
 }
 
+typedef struct {
+    int32_t xoff;
+    int32_t yoff;
+    int32_t mul;
+    int32_t div;
+} Camera2D;
+
+static
+uint32_t camera_to_world_i(const Camera2D camera, uint32_t i) {
+    return ((((int32_t) i)*FIXONE) - camera.xoff) * camera.mul / camera.div;
+}
+
+static
+uint32_t camera_to_world_j(const Camera2D camera, uint32_t j) {
+    return ((((int32_t) j)*FIXONE) - camera.yoff) * camera.mul / camera.div;
+}
+
 int main(void) {
     const uint32_t w = WIDTH;
     const uint32_t h = HEIGHT;
     int32_t distmap[WIDTH*HEIGHT];
     uint32_t canvas[WIDTH*UPSCALE*HEIGHT*UPSCALE];
 
+    const Camera2D camera = {
+        .xoff = (w - 1)*FIXONE/2,
+        .yoff = (h - 1)*FIXONE/2,
+        .mul = 3,
+        .div = 4,
+    };
+
     const int32_t cx = 0*FIXONE;
     const int32_t cy = 0*FIXONE;
     const int32_t r = 8*FIXONE;
 
     for (uint32_t j = 0; j < h; j += 1) {
-        const int32_t py = (j - (h/2))*FIXONE;
+        const int32_t py = camera_to_world_j(camera, j);
         for (uint32_t i = 0; i < w; i += 1) {
-            const int32_t px = (i - (w/2))*FIXONE;
+            const int32_t px = camera_to_world_i(camera, i);
             const int32_t dist = zdf_circle(cx, cy, r, px, py);
             distmap[j*w + i] = dist;
         }
