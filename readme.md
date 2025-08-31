@@ -1,1 +1,1 @@
-# Z(integer) Distance Field
+# Z(integer)igned Distance Field
