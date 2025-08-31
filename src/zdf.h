@@ -27,6 +27,9 @@
 #define ZDF_FUNC(name) zdf_ ## name
 #endif // ZDF_FUNC
 
+ZDF_LONG ZDF_FUNC(mult)(ZDF_INT a, ZDF_INT b);
+ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y);
+
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
 
 typedef struct {
@@ -41,7 +44,6 @@ ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py);
 
 #ifdef ZDF_IMPLEMENTATION
 
-static inline
 ZDF_LONG ZDF_FUNC(mult)(ZDF_INT a, ZDF_INT b) {
     return ((ZDF_LONG) a) * ((ZDF_LONG) b);
 }
@@ -61,12 +63,16 @@ ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
     return res;
 }
 
+ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y) {
+    const ZDF_LONG xx = ZDF_FUNC(mult)(x, x);
+    const ZDF_LONG yy = ZDF_FUNC(mult)(y, y);
+    return ZDF_FUNC(lisqrt)(xx + yy);
+}
+
 ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py) {
     const ZDF_INT dx = px - circle.cx;
     const ZDF_INT dy = py - circle.cy;
-    const ZDF_LONG dxdx = ZDF_FUNC(mult)(dx, dx);
-    const ZDF_LONG dydy = ZDF_FUNC(mult)(dy, dy);
-    return ZDF_FUNC(lisqrt)(dxdx + dydy) - circle.r;
+    return ZDF_FUNC(ilen)(dx, dy) - circle.r;
 }
 
 #endif // ZDF_IMPLEMENTATION
