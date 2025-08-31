@@ -19,13 +19,23 @@
 
 #endif // ZDF_INT
 
+#ifndef ZDF_TYPE
+#define ZDF_TYPE(name) Zdf ## name
+#endif // ZDF_TYPE
+
 #ifndef ZDF_FUNC
 #define ZDF_FUNC(name) zdf_ ## name
 #endif // ZDF_FUNC
 
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
 
-ZDF_INT ZDF_FUNC(circle)(ZDF_INT cx, ZDF_INT cy, ZDF_INT r, ZDF_INT px, ZDF_INT py);
+typedef struct {
+    ZDF_INT cx;
+    ZDF_INT cy;
+    ZDF_INT r;
+} ZDF_TYPE(Circle);
+
+ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py);
 
 #endif // _ZDF_H_
 
@@ -51,12 +61,12 @@ ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
     return res;
 }
 
-ZDF_INT ZDF_FUNC(circle)(ZDF_INT cx, ZDF_INT cy, ZDF_INT r, ZDF_INT px, ZDF_INT py) {
-    const ZDF_INT dx = px - cx;
-    const ZDF_INT dy = py - cy;
+ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py) {
+    const ZDF_INT dx = px - circle.cx;
+    const ZDF_INT dy = py - circle.cy;
     const ZDF_LONG dxdx = ZDF_FUNC(mult)(dx, dx);
     const ZDF_LONG dydy = ZDF_FUNC(mult)(dy, dy);
-    return ZDF_FUNC(lisqrt)(dxdx + dydy) - r;
+    return ZDF_FUNC(lisqrt)(dxdx + dydy) - circle.r;
 }
 
 #endif // ZDF_IMPLEMENTATION

@@ -17,6 +17,8 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 #include <stdio.h>
 #include <stdint.h>
 
+#define ARRLEN(x) ((sizeof(x))/(sizeof(x[0])))
+
 void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride);
 
 #define FIXONE 0x10
@@ -47,7 +49,7 @@ void distmap_to_canvas(
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
-            const uint32_t ud = (uint32_t) (d < 0 ? -d : d);
+            const uint32_t ud = (uint32_t) ((d < 0) ? -d : d);
 
             uint8_t r = 0;
             uint8_t g = 0;
@@ -103,15 +105,29 @@ int main(void) {
     };
     const uint32_t border = FIXONE*2/8;
 
-    const int32_t cx = 0*FIXONE;
-    const int32_t cy = 0*FIXONE;
-    const int32_t r = 8*FIXONE;
+    const ZdfCircle circles[] = {
+        (ZdfCircle){
+            .cx = - 9*FIXONE/2,
+            .cy = - 0*FIXONE,
+            .r = 5*FIXONE,
+        },
+        (ZdfCircle){
+            .cx = 9*FIXONE/2,
+            .cy = 0*FIXONE,
+            .r = 5*FIXONE,
+        },
+    };
 
     for (uint32_t j = 0; j < h; j += 1) {
         const int32_t py = camera_to_world_j(camera, j);
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t px = camera_to_world_i(camera, i);
-            const int32_t dist = zdf_circle(cx, cy, r, px, py);
+            int32_t dist = zdf_circle(circles[0], px, py);
+
+            for (uint32_t k = 1; k < ARRLEN(circles); k += 1) {
+                const int32_t d = zdf_circle(circles[k], px, py);
+                dist = (d < dist) ? d : dist;
+            }
             distmap[j*w + i] = dist;
         }
     }
