@@ -33,7 +33,6 @@ void distmap_to_canvas(
 ) {
     uint32_t max_neg = 0;
     uint32_t max_pos = 0;
-    const uint32_t min = 0x10;
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
@@ -56,12 +55,12 @@ void distmap_to_canvas(
             uint8_t b = 0;
 
             if (d < 0) {
-                b = (ud * (0xFF - min) / max_neg) + min;
+                b = ud * 0xFF / max_neg;
             } else {
-                r = (ud * (0xFF - min) / max_pos) + min;
+                r = ud * 0xFF / max_pos;
             }
             if (ud < border) {
-                g = ((border - ud) * (0xFF - min) / border) + min;
+                g = (border - ud) * 0xFF / border;
             }
             const uint32_t color = rgb(r, g, b);
 
