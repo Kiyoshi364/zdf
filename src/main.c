@@ -26,42 +26,39 @@ void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t str
 
 void distmap_to_canvas(
     const int32_t *distmap, uint32_t w, uint32_t h, uint32_t stride,
-    uint32_t *canvas, uint32_t uw, uint32_t uh, uint32_t cstride
+    uint32_t *canvas, uint32_t uw, uint32_t uh, uint32_t cstride,
+    uint32_t border
 ) {
-    int32_t max_neg = -1;
-    int32_t max_pos = -1;
-    const int32_t min_neg = 0x10;
-    const int32_t min_pos = 0x10;
+    uint32_t max_neg = 0;
+    uint32_t max_pos = 0;
+    const uint32_t min = 0x04;
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
-            if (d <= 0 && max_neg < -d) {
-                max_neg = -d;
+            if (d <= 0 && max_neg < ((uint32_t) -d)) {
+                max_neg = (uint32_t) -d;
             }
-            if (0 <= d && max_pos < d) {
-                max_pos = d;
+            if (0 <= d && max_pos < ((uint32_t) d)) {
+                max_pos = (uint32_t) d;
             }
         }
     }
 
-    assert(0 < max_neg);
-    assert(0 < max_pos);
-
-    const int32_t border = FIXONE*5/8;
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t d = distmap[j*stride + i];
+            const uint32_t ud = (uint32_t) (d < 0 ? -d : d);
 
             uint8_t r = 0;
             uint8_t g = 0;
             uint8_t b = 0;
 
             if (d < 0) {
-                b = (((uint32_t) (-d)) + min_neg) * 0xFF / (max_neg + min_neg);
+                b = (ud + min) * 0xFF / (max_neg + min);
             } else {
-                r = (((uint32_t) d) + min_pos) * 0xFF / (max_pos + min_pos);
+                r = (ud + min) * 0xFF / (max_pos + min);
             }
-            if (-border < d && d < border) {
+            if (ud < border) {
                 g = 0xFF;
             }
             const uint32_t color = rgb(r, g, b);
@@ -104,6 +101,7 @@ int main(void) {
         .mul = 3,
         .div = 4,
     };
+    const uint32_t border = FIXONE*2/8;
 
     const int32_t cx = 0*FIXONE;
     const int32_t cy = 0*FIXONE;
@@ -118,7 +116,11 @@ int main(void) {
         }
     }
 
-    distmap_to_canvas(distmap, w, h, w, canvas, UPSCALE, UPSCALE, w*UPSCALE);
+    distmap_to_canvas(
+        distmap, w, h, w,
+        canvas, UPSCALE, UPSCALE, w*UPSCALE,
+        border
+    );
 
     FILE *out = fopen("img.ppm", "w");
     gen(out, canvas, w*UPSCALE, h*UPSCALE, w*UPSCALE);
