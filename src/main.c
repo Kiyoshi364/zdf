@@ -90,6 +90,8 @@ uint32_t camera_to_world_j(const Camera2D camera, uint32_t j) {
     return ((((int32_t) j)*FIXONE) - camera.yoff) * camera.mul / camera.div;
 }
 
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, int32_t px, int32_t py);
+
 int main(void) {
     const uint32_t w = WIDTH;
     const uint32_t h = HEIGHT;
@@ -135,16 +137,7 @@ int main(void) {
         const int32_t py = camera_to_world_j(camera, j);
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t px = camera_to_world_i(camera, i);
-            int32_t dist = zdf_circle(circles[0], px, py);
-
-            for (uint32_t k = 1; k < ARRLEN(circles); k += 1) {
-                const int32_t d = zdf_circle(circles[k], px, py);
-                dist = (d < dist) ? d : dist;
-            }
-            for (uint32_t k = 0; k < ARRLEN(lines); k += 1) {
-                const int32_t d = zdf_line(lines[k], px, py);
-                dist = (d < dist) ? d : dist;
-            }
+            int32_t dist = sdf_dist(circles, ARRLEN(circles), lines, ARRLEN(lines), px, py);
             distmap[j*w + i] = dist;
         }
     }
@@ -160,6 +153,21 @@ int main(void) {
     fclose(out);
 
     return 0;
+}
+
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, int32_t px, int32_t py) {
+    assert(0 < circle_len);
+    int32_t dist = zdf_circle(circles[0], px, py);
+
+    for (uint32_t k = 1; k < circle_len; k += 1) {
+        const int32_t d = zdf_circle(circles[k], px, py);
+        dist = (d < dist) ? d : dist;
+    }
+    for (uint32_t k = 0; k < line_len; k += 1) {
+        const int32_t d = zdf_line(lines[k], px, py);
+        dist = (d < dist) ? d : dist;
+    }
+    return dist;
 }
 
 #define ZDF_IMPLEMENTATION
