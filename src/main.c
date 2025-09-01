@@ -116,6 +116,20 @@ int main(void) {
             .r = 5*FIXONE,
         },
     };
+    const ZdfLine lines[] = {
+        (ZdfLine){
+            .cx = 17*FIXONE/2,
+            .cy = 0*FIXONE,
+            .nx = - 1*FIXONE,
+            .ny = 1*FIXONE,
+        },
+        (ZdfLine){
+            .cx = 17*FIXONE/2,
+            .cy = 0*FIXONE,
+            .nx = - 1*FIXONE,
+            .ny = - 1*FIXONE,
+        },
+    };
 
     for (uint32_t j = 0; j < h; j += 1) {
         const int32_t py = camera_to_world_j(camera, j);
@@ -125,6 +139,10 @@ int main(void) {
 
             for (uint32_t k = 1; k < ARRLEN(circles); k += 1) {
                 const int32_t d = zdf_circle(circles[k], px, py);
+                dist = (d < dist) ? d : dist;
+            }
+            for (uint32_t k = 0; k < ARRLEN(lines); k += 1) {
+                const int32_t d = zdf_line(lines[k], px, py);
                 dist = (d < dist) ? d : dist;
             }
             distmap[j*w + i] = dist;
