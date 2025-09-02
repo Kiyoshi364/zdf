@@ -27,31 +27,39 @@
 #define ZDF_FUNC(name) zdf_ ## name
 #endif // ZDF_FUNC
 
+typedef struct {
+    ZDF_INT x;
+    ZDF_INT y;
+} ZDF_TYPE(Vec2);
+
 ZDF_LONG ZDF_FUNC(imul)(ZDF_INT a, ZDF_INT b);
 ZDF_LONG ZDF_FUNC(idot)(ZDF_INT x1, ZDF_INT y1, ZDF_INT x2, ZDF_INT y2);
 ZDF_LONG ZDF_FUNC(idot2)(ZDF_INT x, ZDF_INT y);
-
 ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y);
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivscale)(ZDF_TYPE(Vec2) v, int mul, int div);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivadd)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivsub)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
+ZDF_LONG ZDF_FUNC(ivdot)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
+ZDF_LONG ZDF_FUNC(ivdot2)(ZDF_TYPE(Vec2) v);
+ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v);
 
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b);
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
 
 typedef struct {
-    ZDF_INT cx;
-    ZDF_INT cy;
+    ZDF_TYPE(Vec2) c;
     ZDF_INT r;
 } ZDF_TYPE(Circle);
 
-ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py);
+ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p);
 
 typedef struct {
-    ZDF_INT cx;
-    ZDF_INT cy;
-    ZDF_INT nx;
-    ZDF_INT ny;
+    ZDF_TYPE(Vec2) c;
+    ZDF_TYPE(Vec2) n;
 } ZDF_TYPE(Line);
 
-ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_INT px, ZDF_INT py);
+ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
 
 #endif // _ZDF_H_
 
@@ -69,6 +77,43 @@ ZDF_LONG ZDF_FUNC(idot)(ZDF_INT x1, ZDF_INT y1, ZDF_INT x2, ZDF_INT y2) {
 
 ZDF_LONG ZDF_FUNC(idot2)(ZDF_INT x, ZDF_INT y) {
     return ZDF_FUNC(idot)(x, y, x, y);
+}
+
+ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y) {
+    return ZDF_FUNC(lisqrt)(ZDF_FUNC(idot2)(x, y));
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivscale)(ZDF_TYPE(Vec2) v, int mul, int div) {
+    return (ZDF_TYPE(Vec2)){
+        .x = v.x * mul / div,
+        .y = v.y * mul / div,
+    };
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivadd)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2) {
+    return (ZDF_TYPE(Vec2)){
+        .x = v1.x + v2.x,
+        .y = v1.y + v2.y,
+    };
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivsub)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2) {
+    return (ZDF_TYPE(Vec2)){
+        .x = v1.x - v2.x,
+        .y = v1.y - v2.y,
+    };
+}
+
+ZDF_LONG ZDF_FUNC(ivdot)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2) {
+    return ZDF_FUNC(idot)(v1.x, v1.y, v2.x, v2.y);
+}
+
+ZDF_LONG ZDF_FUNC(ivdot2)(ZDF_TYPE(Vec2) v) {
+    return ZDF_FUNC(ivdot)(v, v);
+}
+
+ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v) {
+    return ZDF_FUNC(ilen)(v.x, v.y);
 }
 
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b) {
@@ -92,21 +137,15 @@ ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
     return res;
 }
 
-ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y) {
-    return ZDF_FUNC(lisqrt)(ZDF_FUNC(idot2)(x, y));
+ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p) {
+    const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(p, circle.c);
+    return ZDF_FUNC(ivlen)(d) - circle.r;
 }
 
-ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_INT px, ZDF_INT py) {
-    const ZDF_INT dx = px - circle.cx;
-    const ZDF_INT dy = py - circle.cy;
-    return ZDF_FUNC(ilen)(dx, dy) - circle.r;
-}
-
-ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_INT px, ZDF_INT py) {
-    const ZDF_INT dx = px - line.cx;
-    const ZDF_INT dy = py - line.cy;
-    const ZDF_LONG dot = ZDF_FUNC(idot)(dx, dy, line.nx, line.ny);
-    const ZDF_INT len = ZDF_FUNC(ilen)(line.nx, line.ny);
+ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
+    const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(p, line.c);
+    const ZDF_LONG dot = ZDF_FUNC(ivdot)(d, line.n);
+    const ZDF_INT len = ZDF_FUNC(ivlen)(line.n);
     return ZDF_FUNC(lidiv)(dot, len);
 }
 

@@ -69,23 +69,21 @@ void distmap_to_canvas(
 }
 
 typedef struct {
-    int32_t xoff;
-    int32_t yoff;
+    ZdfVec2 off;
     int32_t mul;
     int32_t div;
 } Camera2D;
 
 static
-uint32_t camera_to_world_i(const Camera2D camera, uint32_t i) {
-    return ((((int32_t) i)*FIXONE) - camera.xoff) * camera.mul / camera.div;
+ZdfVec2 camera_to_world(const Camera2D camera, uint32_t i, uint32_t j) {
+    const ZdfVec2 v = (ZdfVec2){
+        .x = ((int32_t) i)*FIXONE,
+        .y = ((int32_t) j)*FIXONE,
+    };
+    return zdf_ivscale(zdf_ivsub(v, camera.off), camera.mul, camera.div);
 }
 
-static
-uint32_t camera_to_world_j(const Camera2D camera, uint32_t j) {
-    return ((((int32_t) j)*FIXONE) - camera.yoff) * camera.mul / camera.div;
-}
-
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, int32_t px, int32_t py);
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, ZdfVec2 p);
 
 int main(void) {
     const uint32_t w = WIDTH;
@@ -93,9 +91,11 @@ int main(void) {
     int32_t distmap[WIDTH*HEIGHT];
     uint32_t canvas[WIDTH*HEIGHT];
 
-    const Camera2D camera = {
-        .xoff = (w - 1)*FIXONE/2,
-        .yoff = (h - 1)*FIXONE/2,
+    const Camera2D camera = (Camera2D){
+        .off = (ZdfVec2){
+            .x = (w - 1)*FIXONE/2,
+            .y = (h - 1)*FIXONE/2,
+        },
         .mul = 3,
         .div = 4,
     };
@@ -103,36 +103,47 @@ int main(void) {
 
     const ZdfCircle circles[] = {
         (ZdfCircle){
-            .cx = - 9*FIXONE/2,
-            .cy = - 0*FIXONE,
+            .c = (ZdfVec2){
+                .x = - 9*FIXONE/2,
+                .y = - 0*FIXONE,
+            },
             .r = 5*FIXONE,
         },
         (ZdfCircle){
-            .cx = 9*FIXONE/2,
-            .cy = 0*FIXONE,
+            .c = (ZdfVec2){
+                .x = 9*FIXONE/2,
+                .y = 0*FIXONE,
+            },
             .r = 5*FIXONE,
         },
     };
     const ZdfLine lines[] = {
         (ZdfLine){
-            .cx = 17*FIXONE/2,
-            .cy = 0*FIXONE,
-            .nx = - 1*FIXONE,
-            .ny = 1*FIXONE,
+            .c = (ZdfVec2){
+                .x = 17*FIXONE/2,
+                .y = 0*FIXONE,
+            },
+            .n = (ZdfVec2){
+                .x = - 1*FIXONE,
+                .y = 1*FIXONE,
+            },
         },
         (ZdfLine){
-            .cx = 17*FIXONE/2,
-            .cy = 0*FIXONE,
-            .nx = - 1*FIXONE,
-            .ny = - 1*FIXONE,
+            .c = (ZdfVec2){
+                .x = 17*FIXONE/2,
+                .y = 0*FIXONE,
+            },
+            .n = (ZdfVec2){
+                .x = - 1*FIXONE,
+                .y = - 1*FIXONE,
+            },
         },
     };
 
     for (uint32_t j = 0; j < h; j += 1) {
-        const int32_t py = camera_to_world_j(camera, j);
         for (uint32_t i = 0; i < w; i += 1) {
-            const int32_t px = camera_to_world_i(camera, i);
-            int32_t dist = sdf_dist(circles, ARRLEN(circles), lines, ARRLEN(lines), px, py);
+            const ZdfVec2 p = camera_to_world(camera, i, j);
+            int32_t dist = sdf_dist(circles, ARRLEN(circles), lines, ARRLEN(lines), p);
             distmap[j*w + i] = dist;
         }
     }
@@ -150,16 +161,16 @@ int main(void) {
     return 0;
 }
 
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, int32_t px, int32_t py) {
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, ZdfVec2 p) {
     assert(0 < circle_len);
-    int32_t dist = zdf_circle(circles[0], px, py);
+    int32_t dist = zdf_circle(circles[0], p);
 
     for (uint32_t k = 1; k < circle_len; k += 1) {
-        const int32_t d = zdf_circle(circles[k], px, py);
+        const int32_t d = zdf_circle(circles[k], p);
         dist = (d < dist) ? d : dist;
     }
     for (uint32_t k = 0; k < line_len; k += 1) {
-        const int32_t d = zdf_line(lines[k], px, py);
+        const int32_t d = zdf_line(lines[k], p);
         dist = (d < dist) ? d : dist;
     }
     return dist;
