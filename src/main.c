@@ -96,8 +96,8 @@ int main(void) {
             .x = (w - 1)*FIXONE/2,
             .y = (h - 1)*FIXONE/2,
         },
-        .mul = 3,
-        .div = 4,
+        .mul = 16,
+        .div = h,
     };
     const uint32_t border = FIXONE*2/8;
 
