@@ -15,6 +15,7 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 
 #include "zdf.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 #define ARRLEN(x) ((sizeof(x))/(sizeof(x[0])))
@@ -88,8 +89,10 @@ int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine l
 int main(void) {
     const uint32_t w = WIDTH;
     const uint32_t h = HEIGHT;
-    int32_t distmap[WIDTH*HEIGHT];
-    uint32_t canvas[WIDTH*HEIGHT];
+    int32_t *distmap = malloc(WIDTH*HEIGHT*sizeof(*distmap));
+    assert(distmap);
+    uint32_t *canvas = malloc(WIDTH*HEIGHT*sizeof(*canvas));
+    assert(canvas);
 
     const Camera2D camera = (Camera2D){
         .off = (ZdfVec2){
