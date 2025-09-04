@@ -176,11 +176,8 @@ ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
 }
 
 ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
-    const ZDF_INT sign = (ZDF_FUNC(ivdot)(p, line.n) < 0) ? -1 : 1;
-    return (ZDF_TYPE(Vec2)){
-        .x = sign * line.n.x,
-        .y = sign * line.n.y,
-    };
+    (void) p;
+    return line.n;
 }
 
 #endif // ZDF_IMPLEMENTATION
