@@ -152,20 +152,14 @@ int main(void) {
     };
     const ZdfLine lines[] = {
         (ZdfLine){
-            .c = (ZdfVec2){
-                .x = 17*FIXONE/2,
-                .y = 0*FIXONE,
-            },
+            .off = 17*FIXONE/2,
             .n = zdf_ivnormal((ZdfVec2){
                 .x = - 1*FIXONE,
                 .y = 1*FIXONE,
             }, FIXONE),
         },
         (ZdfLine){
-            .c = (ZdfVec2){
-                .x = 17*FIXONE/2,
-                .y = 0*FIXONE,
-            },
+            .off = 17*FIXONE/2,
             .n = zdf_ivnormal((ZdfVec2){
                 .x = - 1*FIXONE,
                 .y = - 1*FIXONE,

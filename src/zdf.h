@@ -57,8 +57,8 @@ ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p);
 ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, ZDF_INT one);
 
 typedef struct {
-    ZDF_TYPE(Vec2) c;
     ZDF_TYPE(Vec2) n;
+    ZDF_INT off;
 } ZDF_TYPE(Line);
 
 ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one);
@@ -170,9 +170,8 @@ ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, 
 }
 
 ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
-    const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(p, line.c);
-    const ZDF_LONG dot = ZDF_FUNC(ivdot)(d, line.n);
-    return ZDF_FUNC(lidiv)(dot, one);
+    const ZDF_LONG dot = ZDF_FUNC(ivdot)(p, line.n);
+    return ZDF_FUNC(lidiv)(dot, one) + line.off;
 }
 
 ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
