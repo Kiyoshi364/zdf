@@ -53,6 +53,7 @@ typedef struct {
 } ZDF_TYPE(Circle);
 
 ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p);
+ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, ZDF_INT one);
 
 typedef struct {
     ZDF_TYPE(Vec2) c;
@@ -60,6 +61,7 @@ typedef struct {
 } ZDF_TYPE(Line);
 
 ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
+ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one);
 
 #endif // _ZDF_H_
 
@@ -142,11 +144,38 @@ ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p) {
     return ZDF_FUNC(ivlen)(d) - circle.r;
 }
 
+ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, ZDF_INT one) {
+    const ZDF_TYPE(Vec2) n = (ZDF_TYPE(Vec2)){
+        .x = p.x - circle.c.x,
+        .y = p.y - circle.c.y,
+    };
+    const ZDF_INT len = ZDF_FUNC(ivlen)(n);
+    const ZDF_LONG nx_ = ZDF_FUNC(imul)(n.x, one);
+    const ZDF_LONG ny_ = ZDF_FUNC(imul)(n.y, one);
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(lidiv)(nx_, len),
+        .y = ZDF_FUNC(lidiv)(ny_, len),
+    };
+}
+
 ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
     const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(p, line.c);
     const ZDF_LONG dot = ZDF_FUNC(ivdot)(d, line.n);
     const ZDF_INT len = ZDF_FUNC(ivlen)(line.n);
     return ZDF_FUNC(lidiv)(dot, len);
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
+    if (ZDF_FUNC(ivdot)(p, line.n) < 0) {
+        one *= -1;
+    }
+    const ZDF_INT len = ZDF_FUNC(ivlen)(line.n);
+    const ZDF_LONG nx_ = ZDF_FUNC(imul)(line.n.x, one);
+    const ZDF_LONG ny_ = ZDF_FUNC(imul)(line.n.y, one);
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(lidiv)(nx_, len),
+        .y = ZDF_FUNC(lidiv)(ny_, len),
+    };
 }
 
 #endif // ZDF_IMPLEMENTATION

@@ -69,6 +69,33 @@ void distmap_to_canvas(
     }
 }
 
+void gradmap_to_canvas(
+    const ZdfVec2 *gradmap, uint32_t w, uint32_t h, uint32_t stride,
+    uint32_t *canvas
+) {
+    for (uint32_t j = 0; j < h; j += 1) {
+        for (uint32_t i = 0; i < w; i += 1) {
+            const int32_t idx = j*stride + i;
+
+            const ZdfVec2 grad = gradmap[idx];
+            const uint32_t ugx = (uint32_t) ((grad.x < 0) ? -grad.x : grad.x);
+            const uint32_t ugy = (uint32_t) ((grad.y < 0) ? 0 : grad.y);
+
+            uint8_t r = 0;
+            uint8_t g = ugy * 0xFF / FIXONE;
+            uint8_t b = 0;
+
+            if (grad.x < 0) {
+                b = ugx * 0xFF / FIXONE;
+            } else {
+                r = ugx * 0xFF / FIXONE;
+            }
+
+            canvas[idx] = rgb(r, g, b);
+        }
+    }
+}
+
 typedef struct {
     ZdfVec2 off;
     int32_t mul;
@@ -84,13 +111,16 @@ ZdfVec2 camera_to_world(const Camera2D camera, uint32_t i, uint32_t j) {
     return zdf_ivscale(zdf_ivsub(v, camera.off), camera.mul, camera.div);
 }
 
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, ZdfVec2 p);
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p);
+int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad);
 
 int main(void) {
     const uint32_t w = WIDTH;
     const uint32_t h = HEIGHT;
     int32_t *distmap = malloc(WIDTH*HEIGHT*sizeof(*distmap));
     assert(distmap);
+    ZdfVec2 *gradmap = malloc(WIDTH*HEIGHT*sizeof(*gradmap));
+    assert(gradmap);
     uint32_t *canvas = malloc(WIDTH*HEIGHT*sizeof(*canvas));
     assert(canvas);
 
@@ -145,17 +175,25 @@ int main(void) {
 
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t i = 0; i < w; i += 1) {
+            const uint32_t idx = j*w + i;
             const ZdfVec2 p = camera_to_world(camera, i, j);
-            int32_t dist = sdf_dist(circles, ARRLEN(circles), lines, ARRLEN(lines), p);
-            distmap[j*w + i] = dist;
+            const int32_t dist = sdf_dist_grad(circles, ARRLEN(circles), lines, ARRLEN(lines), p, &gradmap[idx]);
+            distmap[idx] = dist;
         }
     }
 
-    distmap_to_canvas(
-        distmap, w, h, w,
-        canvas,
-        border
-    );
+    if (1) {
+        gradmap_to_canvas(
+            gradmap, w, h, w,
+            canvas
+        );
+    } else {
+        distmap_to_canvas(
+            distmap, w, h, w,
+            canvas,
+            border
+        );
+    }
 
     FILE *out = fopen("img.ppm", "w");
     gen(out, canvas, w, h, w, UPSCALE, UPSCALE);
@@ -164,18 +202,44 @@ int main(void) {
     return 0;
 }
 
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circle_len, const ZdfLine lines[], uint32_t line_len, ZdfVec2 p) {
-    assert(0 < circle_len);
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p) {
+    assert(0 < circles_len);
     int32_t dist = zdf_circle(circles[0], p);
 
-    for (uint32_t k = 1; k < circle_len; k += 1) {
+    for (uint32_t k = 1; k < circles_len; k += 1) {
         const int32_t d = zdf_circle(circles[k], p);
         dist = (d < dist) ? d : dist;
     }
-    for (uint32_t k = 0; k < line_len; k += 1) {
+    for (uint32_t k = 0; k < lines_len; k += 1) {
         const int32_t d = zdf_line(lines[k], p);
         dist = (d < dist) ? d : dist;
     }
+    return dist;
+}
+
+int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad) {
+    if (!out_grad) {
+        return sdf_dist(circles, circles_len, lines, lines_len, p);
+    }
+    assert(0 < circles_len);
+    int32_t dist = zdf_circle(circles[0], p);
+    ZdfVec2 grad = zdf_circle_grad(circles[0], p, FIXONE);
+
+    for (uint32_t k = 1; k < circles_len; k += 1) {
+        const int32_t d = zdf_circle(circles[k], p);
+        if (d < dist) {
+            dist = d;
+            grad = zdf_circle_grad(circles[k], p, FIXONE);
+        }
+    }
+    for (uint32_t k = 0; k < lines_len; k += 1) {
+        const int32_t d = zdf_line(lines[k], p);
+        if (d < dist) {
+            dist = d;
+            grad = zdf_line_grad(lines[k], p, FIXONE);
+        }
+    }
+    *out_grad = grad;
     return dist;
 }
 
