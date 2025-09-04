@@ -43,6 +43,7 @@ ZDF_TYPE(Vec2) ZDF_FUNC(ivsub)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
 ZDF_LONG ZDF_FUNC(ivdot)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
 ZDF_LONG ZDF_FUNC(ivdot2)(ZDF_TYPE(Vec2) v);
 ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one);
 
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b);
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
@@ -60,8 +61,8 @@ typedef struct {
     ZDF_TYPE(Vec2) n;
 } ZDF_TYPE(Line);
 
-ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
-ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one);
+ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one);
+ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
 
 #endif // _ZDF_H_
 
@@ -118,6 +119,16 @@ ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v) {
     return ZDF_FUNC(ilen)(v.x, v.y);
 }
 
+ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one) {
+    const ZDF_INT len = ZDF_FUNC(ivlen)(v);
+    const ZDF_LONG x_ = ZDF_FUNC(imul)(v.x, one);
+    const ZDF_LONG y_ = ZDF_FUNC(imul)(v.y, one);
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(lidiv)(x_, len),
+        .y = ZDF_FUNC(lidiv)(y_, len),
+    };
+}
+
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b) {
     const ZDF_LONG res = a / ((ZDF_LONG) b);
     const ZDF_LONG mask = (1ULL << ZDF_INT_BITS) - 1;
@@ -158,23 +169,17 @@ ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, 
     };
 }
 
-ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
+ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
     const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(p, line.c);
     const ZDF_LONG dot = ZDF_FUNC(ivdot)(d, line.n);
-    const ZDF_INT len = ZDF_FUNC(ivlen)(line.n);
-    return ZDF_FUNC(lidiv)(dot, len);
+    return ZDF_FUNC(lidiv)(dot, one);
 }
 
-ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
-    if (ZDF_FUNC(ivdot)(p, line.n) < 0) {
-        one *= -1;
-    }
-    const ZDF_INT len = ZDF_FUNC(ivlen)(line.n);
-    const ZDF_LONG nx_ = ZDF_FUNC(imul)(line.n.x, one);
-    const ZDF_LONG ny_ = ZDF_FUNC(imul)(line.n.y, one);
+ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p) {
+    const ZDF_INT sign = (ZDF_FUNC(ivdot)(p, line.n) < 0) ? -1 : 1;
     return (ZDF_TYPE(Vec2)){
-        .x = ZDF_FUNC(lidiv)(nx_, len),
-        .y = ZDF_FUNC(lidiv)(ny_, len),
+        .x = sign * line.n.x,
+        .y = sign * line.n.y,
     };
 }
 

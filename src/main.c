@@ -156,20 +156,20 @@ int main(void) {
                 .x = 17*FIXONE/2,
                 .y = 0*FIXONE,
             },
-            .n = (ZdfVec2){
+            .n = zdf_ivnormal((ZdfVec2){
                 .x = - 1*FIXONE,
                 .y = 1*FIXONE,
-            },
+            }, FIXONE),
         },
         (ZdfLine){
             .c = (ZdfVec2){
                 .x = 17*FIXONE/2,
                 .y = 0*FIXONE,
             },
-            .n = (ZdfVec2){
+            .n = zdf_ivnormal((ZdfVec2){
                 .x = - 1*FIXONE,
                 .y = - 1*FIXONE,
-            },
+            }, FIXONE),
         },
     };
 
@@ -211,7 +211,7 @@ int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine 
         dist = (d < dist) ? d : dist;
     }
     for (uint32_t k = 0; k < lines_len; k += 1) {
-        const int32_t d = zdf_line(lines[k], p);
+        const int32_t d = zdf_line(lines[k], p, FIXONE);
         dist = (d < dist) ? d : dist;
     }
     return dist;
@@ -233,10 +233,10 @@ int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const Zdf
         }
     }
     for (uint32_t k = 0; k < lines_len; k += 1) {
-        const int32_t d = zdf_line(lines[k], p);
+        const int32_t d = zdf_line(lines[k], p, FIXONE);
         if (d < dist) {
             dist = d;
-            grad = zdf_line_grad(lines[k], p, FIXONE);
+            grad = zdf_line_grad(lines[k], p);
         }
     }
     *out_grad = grad;
