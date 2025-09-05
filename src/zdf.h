@@ -79,6 +79,11 @@ ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
 
 #ifdef ZDF_IMPLEMENTATION
 
+#ifndef ZDF_ASSERT
+#define ZDF_ASSERT ZDF_FUNC(__assert)
+void ZDF_FUNC(__assert)(...) {}
+#endif // ZDF_ASSERT
+
 ZDF_LONG ZDF_FUNC(imul)(ZDF_INT a, ZDF_INT b) {
     return ((ZDF_LONG) a) * ((ZDF_LONG) b);
 }
@@ -146,19 +151,60 @@ ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b) {
     return (ZDF_INT) (res & mask);
 }
 
+// REF: https://wikipedia.org/wiki/Square_root_algorithms#Digit-by-digit_calculation
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n) {
-    ZDF_LONG acc = 0;
+    // NOTE: code inside ZDF_NO_TRUST_LISQRT
+    // is a proof sketch for correctness
+    ZDF_LONG remainder = n;
+    const ZDF_INT initial_one2_power = (((ZDF_LONG_BITS - 1) >> 2) << 2);
+    ZDF_LONG one2 = ((ZDF_LONG) 1) << initial_one2_power;
+    ZDF_LONG two_res_one = 0;
+
+    // NOTE: one2 == pow(4, initial_one2_power >> 1)
+
+#ifdef ZDF_NOTRUST_LISQRT
+    ZDF_INT one = ((ZDF_INT) 1) << (initial_one2_power >> 1);
     ZDF_INT res = 0;
-    for (ZDF_INT i = (1 << (((ZDF_INT_BITS - 1)/2) + 1 - 1)); 0 < i; i >>= 1) {
-        const ZDF_LONG new_acc = acc + ZDF_FUNC(idot)(2*res, i, i, i);
-        if (new_acc <= n) {
-            acc = new_acc;
-            res += i;
-        } else {
-            // Nothing
-        }
+    ZDF_ASSERT(one2 == ((ZDF_LONG) one)*((ZDF_LONG) one));
+    // NOTE: one2 == pow(2, initial_one2_power >> 1)
+#endif // ZDF_NOTRUST_LISQRT
+
+    while (remainder < one2) {
+        one2 >>= 2;
+#ifdef ZDF_NOTRUST_LISQRT
+        one >>= 1;
+        ZDF_ASSERT(one2 == ((ZDF_LONG) one)*((ZDF_LONG) one));
+#endif // ZDF_NOTRUST_LISQRT
     }
-    return res;
+
+    while (0 < one2) {
+        if (one2 + two_res_one <= remainder) {
+            remainder -= (one2 + two_res_one);
+            two_res_one = (two_res_one >> 1) + one2;
+
+#ifdef ZDF_NOTRUST_LISQRT
+            res += one;
+#endif // ZDF_NOTRUST_LISQRT
+        } else {
+            two_res_one = (two_res_one >> 1);
+        }
+        one2 >>= 2;
+#ifdef ZDF_NOTRUST_LISQRT
+        one >>= 1;
+        ZDF_ASSERT(one2 == ((ZDF_LONG) one)*((ZDF_LONG) one));
+        ZDF_ASSERT(n == res*res + remainder);
+        ZDF_ASSERT(remainder < 2*(((ZDF_LONG) res)*(2*((ZDF_LONG) one)+1)) + (2*((ZDF_LONG) one)+1)*(2*((ZDF_LONG) one)+1));
+        ZDF_ASSERT(
+            two_res_one == 2*(((ZDF_LONG) res)*((ZDF_LONG) one))
+            || two_res_one == res
+        );
+#endif // ZDF_NOTRUST_LISQRT
+    }
+
+#ifdef ZDF_NOTRUST_LISQRT
+    ZDF_ASSERT(two_res_one == res);
+#endif // ZDF_NOTRUST_LISQRT
+    return (ZDF_INT) two_res_one;
 }
 
 ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p) {

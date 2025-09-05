@@ -240,6 +240,8 @@ int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const Zdf
 }
 
 #define ZDF_IMPLEMENTATION
+#define ZDF_ASSERT assert
+#define ZDF_NOTRUST_LISQRT
 #include "zdf.h"
 
 // PBM serializer (to P6)
