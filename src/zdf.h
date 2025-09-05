@@ -1,22 +1,23 @@
 #ifndef _ZDF_H_
 #define _ZDF_H_
 
-#ifndef ZDF_INT
-#include <stdint.h>
-#define ZDF_INT int32_t
-
-#ifndef ZDF_LONG
-#define ZDF_LONG int64_t
-#else // ZDF_LONG
-#error "ZDF_LONG is defined but ZDF_INT is not"
-#define ZDF_LONG int64_t
-#endif // ZDF_LONG
-
-#else // ZDF_INT
+#ifdef ZDF_INT
 
 #ifndef ZDF_LONG
 #error "ZDF_LONG is not defined but ZDF_INT is"
 #define ZDF_LONG long long int
+#endif // ZDF_LONG
+
+#else // ZDF_INT
+
+#include <stdint.h>
+#define ZDF_INT int32_t
+
+#ifdef ZDF_LONG
+#error "ZDF_LONG is defined but ZDF_INT is not"
+#define ZDF_LONG int64_t
+#else // ZDF_LONG
+#define ZDF_LONG int64_t
 #endif // ZDF_LONG
 
 #endif // ZDF_INT
