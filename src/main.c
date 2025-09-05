@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdint.h>
 
 int32_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
@@ -13,7 +12,10 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
     return rgba(r, g, b, 0xFF);
 }
 
+#define ZDF_INT int32_t
+#define ZDF_LONG int64_t
 #include "zdf.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

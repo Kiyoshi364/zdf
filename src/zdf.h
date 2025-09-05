@@ -5,19 +5,29 @@
 #include <stdint.h>
 #define ZDF_INT int32_t
 
-#ifndef ZDF_INT_BITS
-#define ZDF_INT_BITS 32
-#else
-#error "ZDF_INT is defined but ZDF_INT_BITS is not"
-#endif // ZDF_INT_BITS
-
 #ifndef ZDF_LONG
 #define ZDF_LONG int64_t
-#else
-#error "ZDF_INT is defined but ZDF_LONG is not"
+#else // ZDF_LONG
+#error "ZDF_LONG is defined but ZDF_INT is not"
+#define ZDF_LONG int64_t
+#endif // ZDF_LONG
+
+#else // ZDF_INT
+
+#ifndef ZDF_LONG
+#error "ZDF_LONG is not defined but ZDF_INT is"
+#define ZDF_LONG long long int
 #endif // ZDF_LONG
 
 #endif // ZDF_INT
+
+#ifndef ZDF_INT_BITS
+#define ZDF_INT_BITS (sizeof(ZDF_INT) << 3)
+#endif // ZDF_INT_BITS
+
+#ifndef ZDF_LONG_BITS
+#define ZDF_LONG_BITS (sizeof(ZDF_LONG) << 3)
+#endif // ZDF_LONG_BITS
 
 #ifndef ZDF_TYPE
 #define ZDF_TYPE(name) Zdf ## name
