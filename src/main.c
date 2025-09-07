@@ -22,7 +22,7 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 
 #define ARRLEN(x) ((sizeof(x))/(sizeof(x[0])))
 
-void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh);
+void canvas_to_pbm6(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh);
 
 #define FIXONE 0x10
 #define WIDTH 32
@@ -192,7 +192,7 @@ int main(void) {
     }
 
     FILE *out = fopen("img.ppm", "w");
-    gen(out, canvas, w, h, w, UPSCALE, UPSCALE);
+    canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
     fclose(out);
 
     return 0;
@@ -244,8 +244,7 @@ int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const Zdf
 #define ZDF_NOTRUST_LISQRT
 #include "zdf.h"
 
-// PBM serializer (to P6)
-void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh) {
+void canvas_to_pbm6(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh) {
     fprintf(out, "P6 %d %d 255\n", w*uw, h*uh);
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t jj = 0; jj < uh; jj += 1) {
@@ -255,14 +254,13 @@ void gen(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t str
                 const uint8_t g = (p >> (8*1) & 0xFF);
                 const uint8_t b = (p >> (8*2) & 0xFF);
                 const uint8_t a = (p >> (8*3) & 0xFF);
-                if (a == 0xFF) {
-                    for (uint32_t ii = 0; ii < uw; ii += 1) {
-                        fprintf(out, "%c%c%c", r, g, b);
-                    }
-                } else {
-                    for (uint32_t ii = 0; ii < uw; ii += 1) {
-                        fprintf(out, "%c%c%c", 0, 0, 0);
-                    }
+                const uint8_t color[3] = {
+                    r * a / 0xFF,
+                    g * a / 0xFF,
+                    b * a / 0xFF,
+                };
+                for (uint32_t ii = 0; ii < uw; ii += 1) {
+                    fwrite(color, sizeof(color[0]), ARRLEN(color), out);
                 }
             }
         }
