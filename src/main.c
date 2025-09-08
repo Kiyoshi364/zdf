@@ -56,7 +56,7 @@ void distmap_to_canvas(
         for (uint32_t i = 0; i < w; i += 1) {
             const int32_t idx = j*stride + i;
             const int32_t d = distmap[idx];
-            const uint32_t ud = (uint32_t) ((d < 0) ? -d : d);
+            const uint32_t ud = zdf_iabs(d);
 
             uint8_t r = 0;
             uint8_t g = 0;
@@ -84,8 +84,8 @@ void gradmap_to_canvas(
             const int32_t idx = j*stride + i;
 
             const ZdfVec2 grad = gradmap[idx];
-            const uint32_t ugx = (uint32_t) ((grad.x < 0) ? -grad.x : grad.x);
-            const uint32_t ugy = (uint32_t) ((grad.y < 0) ? 0 : grad.y);
+            const uint32_t ugx = zdf_iabs(grad.x);
+            const uint32_t ugy = zdf_imax(grad.y, 0);
 
             uint8_t r = 0;
             uint8_t g = ugy * 0xFF / FIXONE;
@@ -223,11 +223,11 @@ int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine 
 
     for (uint32_t k = 1; k < circles_len; k += 1) {
         const int32_t d = zdf_circle(circles[k], p);
-        dist = (d < dist) ? d : dist;
+        dist = zdf_imin(d, dist);
     }
     for (uint32_t k = 0; k < lines_len; k += 1) {
         const int32_t d = zdf_line(lines[k], p, FIXONE);
-        dist = (d < dist) ? d : dist;
+        dist = zdf_imin(d, dist);
     }
     return dist;
 }

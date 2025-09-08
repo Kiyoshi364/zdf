@@ -38,15 +38,22 @@
 #define ZDF_FUNC(name) zdf_ ## name
 #endif // ZDF_FUNC
 
-typedef struct {
-    ZDF_INT x;
-    ZDF_INT y;
-} ZDF_TYPE(Vec2);
+ZDF_INT ZDF_FUNC(iargmin)(ZDF_INT a, ZDF_INT b, ZDF_INT xa, ZDF_INT xb);
+ZDF_INT ZDF_FUNC(iargmax)(ZDF_INT a, ZDF_INT b, ZDF_INT xa, ZDF_INT xb);
+ZDF_INT ZDF_FUNC(imin)(ZDF_INT a, ZDF_INT b);
+ZDF_INT ZDF_FUNC(imax)(ZDF_INT a, ZDF_INT b);
+ZDF_INT ZDF_FUNC(iabs)(ZDF_INT a);
+ZDF_INT ZDF_FUNC(iclamp)(ZDF_INT min, ZDF_INT max, ZDF_INT x);
 
 ZDF_LONG ZDF_FUNC(imul)(ZDF_INT a, ZDF_INT b);
 ZDF_LONG ZDF_FUNC(idot)(ZDF_INT x1, ZDF_INT y1, ZDF_INT x2, ZDF_INT y2);
 ZDF_LONG ZDF_FUNC(idot2)(ZDF_INT x, ZDF_INT y);
 ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y);
+
+typedef struct {
+    ZDF_INT x;
+    ZDF_INT y;
+} ZDF_TYPE(Vec2);
 
 ZDF_TYPE(Vec2) ZDF_FUNC(ivscale)(ZDF_TYPE(Vec2) v, int mul, int div);
 ZDF_TYPE(Vec2) ZDF_FUNC(ivadd)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
@@ -83,6 +90,31 @@ ZDF_TYPE(Vec2) ZDF_FUNC(line_grad)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p);
 #define ZDF_ASSERT ZDF_FUNC(__assert)
 void ZDF_FUNC(__assert)(...) {}
 #endif // ZDF_ASSERT
+
+ZDF_INT ZDF_FUNC(iargmin)(ZDF_INT a, ZDF_INT b, ZDF_INT xa, ZDF_INT xb) {
+    return (a < b) ? xa : xb;
+}
+
+ZDF_INT ZDF_FUNC(iargmax)(ZDF_INT a, ZDF_INT b, ZDF_INT xa, ZDF_INT xb) {
+    return ZDF_FUNC(iargmin)(a, b, xb, xa);
+}
+
+ZDF_INT ZDF_FUNC(imin)(ZDF_INT a, ZDF_INT b) {
+    return ZDF_FUNC(iargmin)(a, b, a, b);
+}
+
+ZDF_INT ZDF_FUNC(imax)(ZDF_INT a, ZDF_INT b) {
+    return ZDF_FUNC(iargmax)(a, b, a, b);
+}
+
+ZDF_INT ZDF_FUNC(iabs)(ZDF_INT a) {
+    return ZDF_FUNC(imax)(a, -a);
+}
+
+ZDF_INT ZDF_FUNC(iclamp)(ZDF_INT min, ZDF_INT max, ZDF_INT x) {
+    return ZDF_FUNC(imax)(min, ZDF_FUNC(imin)(x, max));
+}
+
 
 ZDF_LONG ZDF_FUNC(imul)(ZDF_INT a, ZDF_INT b) {
     return ((ZDF_LONG) a) * ((ZDF_LONG) b);
