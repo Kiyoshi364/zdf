@@ -22,12 +22,16 @@ int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
 
 #define ARRLEN(x) ((sizeof(x))/(sizeof(x[0])))
 
+uint16_t canvas_to_palette(const uint32_t canvas[], uint32_t w, uint32_t h, uint32_t stride, uint8_t indexes[], uint32_t idxsstride, uint32_t palette[], uint32_t palette_len);
 void canvas_to_pbm6(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh);
+void paletteidxs_to_pbm6(FILE *out, const uint8_t indexes[], uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh, uint16_t palette_len);
 
 #define FIXONE 0x10
 #define WIDTH 32
 #define HEIGHT 24
 #define UPSCALE 0x10
+
+#define PALETTE_LEN 0x100
 
 void distmap_to_canvas(
     const int32_t *distmap, uint32_t w, uint32_t h, uint32_t stride,
@@ -125,6 +129,10 @@ int main(void) {
     assert(gradmap);
     uint32_t *canvas = malloc(WIDTH*HEIGHT*sizeof(*canvas));
     assert(canvas);
+    uint32_t *palette = malloc(PALETTE_LEN*sizeof(*palette));
+    assert(palette);
+    uint8_t *palette_idxs = malloc(WIDTH*HEIGHT*sizeof(*palette_idxs));
+    assert(palette_idxs);
 
     const Camera2D camera = (Camera2D){
         .off = (ZdfVec2){
@@ -191,9 +199,20 @@ int main(void) {
         );
     }
 
-    FILE *out = fopen("img.ppm", "w");
-    canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
-    fclose(out);
+    {
+        FILE *out = fopen("img.ppm", "w");
+        canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
+        fclose(out);
+    }
+
+    const uint16_t palette_len = canvas_to_palette(canvas, w, h, w, palette_idxs, w, palette, PALETTE_LEN);
+    assert(0 < palette_len);
+
+    {
+        FILE *out = fopen("palette.ppm", "w");
+        paletteidxs_to_pbm6(out, palette_idxs, w, h, w, UPSCALE, UPSCALE, palette_len);
+        fclose(out);
+    }
 
     return 0;
 }
@@ -244,7 +263,92 @@ int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const Zdf
 #define ZDF_NOTRUST_LISQRT
 #include "zdf.h"
 
-void canvas_to_pbm6(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh) {
+uint16_t canvas_to_palette(
+    const uint32_t canvas[], uint32_t w, uint32_t h, uint32_t stride,
+    uint8_t indexes[], uint32_t idxsstride,
+    uint32_t palette[], uint32_t palette_len
+) {
+    uint16_t size = 0;
+    for (uint32_t j = 0; j < h; j += 1) {
+        for (uint32_t i = 0; i < w; i += 1) {
+            const uint32_t color = canvas[j*stride + i];
+
+            uint16_t pidx = 0;
+            if (0 < size) {
+                // Binary search
+                uint16_t low = 0;
+                uint16_t high = size;
+                assert(low == 0 || palette[low - 1] < color);
+                assert(high == size || color < palette[high]);
+                while (low < high) {
+                    const uint16_t ii = (low + high)/2;
+                    if (palette[ii] < color) {
+                        low = ii + 1;
+                    } else if (color < palette[ii]) {
+                        high = ii;
+                    } else {
+                        low = ii;
+                        break;
+                    }
+                    assert(low == 0 || palette[low - 1] < color);
+                    assert(high == size || color < palette[high]);
+                }
+                if (low == high) {
+                    pidx = low;
+                } else {
+                    continue;
+                }
+            }
+
+            assert(size < palette_len);
+            palette[size] = color;
+            size += 1;
+            for (uint16_t ii = size - 1; pidx < ii; ii -= 1) {
+                assert(palette[ii] <= palette[ii - 1]);
+                const uint32_t t = palette[ii - 1];
+                palette[ii - 1] = palette[ii];
+                palette[ii] = t;
+            }
+            assert(palette[pidx] == color);
+        }
+    }
+
+    for (uint32_t i = 0; i + 1 < size; i += 1) {
+        assert(palette[i] < palette[i + 1]);
+    }
+
+    for (uint32_t j = 0; j < h; j += 1) {
+        for (uint32_t i = 0; i < w; i += 1) {
+            const uint32_t color = canvas[j*stride + i];
+
+            uint32_t pidx = 0;
+            { // Binary Search
+                uint32_t low = 0;
+                uint32_t high = size;
+                assert(low == 0 || palette[low - 1] < color);
+                assert(high == size || color < palette[high]);
+                while (low < high) {
+                    const uint32_t ii = (low + high)/2;
+                    if (palette[ii] < color) {
+                        low = ii + 1;
+                    } else if (color < palette[ii]) {
+                        high = ii;
+                    } else {
+                        low = ii;
+                        break;
+                    }
+                    assert(low == 0 || palette[low - 1] < color);
+                    assert(high == size || color < palette[high]);
+                }
+                pidx = low;
+            }
+            indexes[j*idxsstride + i] = pidx;
+        }
+    }
+    return size;
+}
+
+void canvas_to_pbm6(FILE *out, const uint32_t canvas[], uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh) {
     fprintf(out, "P6 %d %d 255\n", w*uw, h*uh);
     for (uint32_t j = 0; j < h; j += 1) {
         for (uint32_t jj = 0; jj < uh; jj += 1) {
@@ -258,6 +362,27 @@ void canvas_to_pbm6(FILE *out, const uint32_t *canvas, uint32_t w, uint32_t h, u
                     r * a / 0xFF,
                     g * a / 0xFF,
                     b * a / 0xFF,
+                };
+                for (uint32_t ii = 0; ii < uw; ii += 1) {
+                    fwrite(color, sizeof(color[0]), ARRLEN(color), out);
+                }
+            }
+        }
+    }
+}
+
+void paletteidxs_to_pbm6(FILE *out, const uint8_t indexes[], uint32_t w, uint32_t h, uint32_t stride, uint32_t uw, uint32_t uh, uint16_t palette_len) {
+    fprintf(out, "P6 %d %d 255\n", w*uw, h*uh);
+    for (uint32_t j = 0; j < h; j += 1) {
+        for (uint32_t jj = 0; jj < uh; jj += 1) {
+            for (uint32_t i = 0; i < w; i += 1) {
+                const uint32_t idx = indexes[j*stride + i];
+
+                const uint32_t p = idx * 0x00FFFFFF / palette_len;
+                const uint8_t color[3] = {
+                    (p >> (8*0) & 0xFF),
+                    (p >> (8*1) & 0xFF),
+                    (p >> (8*2) & 0xFF),
                 };
                 for (uint32_t ii = 0; ii < uw; ii += 1) {
                     fwrite(color, sizeof(color[0]), ARRLEN(color), out);
