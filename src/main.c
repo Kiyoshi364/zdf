@@ -147,10 +147,10 @@ int main(void) {
     const ZdfCircle circles[] = {
         (ZdfCircle){
             .c = (ZdfVec2){
-                .x = - 9*FIXONE/2,
+                .x = - 5*FIXONE/2,
                 .y = - 0*FIXONE,
             },
-            .r = 5*FIXONE,
+            .r = 4*FIXONE,
         },
         (ZdfCircle){
             .c = (ZdfVec2){
