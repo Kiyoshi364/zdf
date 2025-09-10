@@ -117,8 +117,8 @@ ZdfVec2 camera_to_world(const Camera2D camera, uint32_t i, uint32_t j) {
     return zdf_ivscale(zdf_ivsub(v, camera.off), camera.mul, camera.div);
 }
 
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p);
-int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad);
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfBox boxes[], uint32_t boxes_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p);
+int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfBox boxes[], uint32_t boxes_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad);
 
 int main(void) {
     const uint32_t w = WIDTH;
@@ -160,6 +160,18 @@ int main(void) {
             .r = 5*FIXONE,
         },
     };
+    const ZdfBox boxes[] = {
+        (ZdfBox){
+            .c = (ZdfVec2){
+                .x = - 14*FIXONE/2,
+                .y = - 1*FIXONE,
+            },
+            .r = (ZdfVec2){
+                .x = 3*FIXONE/2,
+                .y = 13*FIXONE/2,
+            },
+        },
+    };
     const ZdfLine lines[] = {
         (ZdfLine){
             .off = 17*FIXONE/2,
@@ -181,7 +193,7 @@ int main(void) {
         for (uint32_t i = 0; i < w; i += 1) {
             const uint32_t idx = j*w + i;
             const ZdfVec2 p = camera_to_world(camera, i, j);
-            const int32_t dist = sdf_dist_grad(circles, ARRLEN(circles), lines, ARRLEN(lines), p, &gradmap[idx]);
+            const int32_t dist = sdf_dist_grad(circles, ARRLEN(circles), boxes, ARRLEN(boxes), lines, ARRLEN(lines), p, &gradmap[idx]);
             distmap[idx] = dist;
         }
     }
@@ -217,12 +229,16 @@ int main(void) {
     return 0;
 }
 
-int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p) {
+int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfBox boxes[], uint32_t boxes_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p) {
     assert(0 < circles_len);
     int32_t dist = zdf_circle(circles[0], p);
 
     for (uint32_t k = 1; k < circles_len; k += 1) {
         const int32_t d = zdf_circle(circles[k], p);
+        dist = zdf_imin(d, dist);
+    }
+    for (uint32_t k = 0; k < boxes_len; k += 1) {
+        const int32_t d = zdf_box(boxes[k], p);
         dist = zdf_imin(d, dist);
     }
     for (uint32_t k = 0; k < lines_len; k += 1) {
@@ -232,9 +248,9 @@ int32_t sdf_dist(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine 
     return dist;
 }
 
-int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad) {
+int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const ZdfBox boxes[], uint32_t boxes_len, const ZdfLine lines[], uint32_t lines_len, ZdfVec2 p, ZdfVec2 *out_grad) {
     if (!out_grad) {
-        return sdf_dist(circles, circles_len, lines, lines_len, p);
+        return sdf_dist(circles, circles_len, boxes, boxes_len, lines, lines_len, p);
     }
     assert(0 < circles_len);
     int32_t dist = zdf_circle(circles[0], p);
@@ -245,6 +261,13 @@ int32_t sdf_dist_grad(const ZdfCircle circles[], uint32_t circles_len, const Zdf
         if (d < dist) {
             dist = d;
             grad = zdf_circle_grad(circles[k], p, FIXONE);
+        }
+    }
+    for (uint32_t k = 0; k < boxes_len; k += 1) {
+        const int32_t d = zdf_box(boxes[k], p);
+        if (d < dist) {
+            dist = d;
+            grad = zdf_box_grad(boxes[k], p, FIXONE);
         }
     }
     for (uint32_t k = 0; k < lines_len; k += 1) {

@@ -63,6 +63,10 @@ ZDF_LONG ZDF_FUNC(ivdot2)(ZDF_TYPE(Vec2) v);
 ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v);
 ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one);
 
+ZDF_TYPE(Vec2) ZDF_FUNC(ivmin)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivmax)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivabs)(ZDF_TYPE(Vec2) v);
+
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b);
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
 
@@ -76,6 +80,14 @@ typedef struct {
 
 ZDF_INT ZDF_FUNC(circle)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p);
 ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, ZDF_INT one);
+
+typedef struct {
+    ZDF_TYPE(Vec2) c;
+    ZDF_TYPE(Vec2) r;
+} ZDF_TYPE(Box);
+
+ZDF_INT ZDF_FUNC(box)(ZDF_TYPE(Box) box, ZDF_TYPE(Vec2) p);
+ZDF_TYPE(Vec2) ZDF_FUNC(box_grad)(ZDF_TYPE(Box) box, ZDF_TYPE(Vec2) p, ZDF_INT one);
 
 typedef struct {
     ZDF_TYPE(Vec2) n;
@@ -170,6 +182,27 @@ ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v) {
     return ZDF_FUNC(ilen)(v.x, v.y);
 }
 
+ZDF_TYPE(Vec2) ZDF_FUNC(ivmin)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2) {
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(imin)(v1.x, v2.x),
+        .y = ZDF_FUNC(imin)(v1.y, v2.y),
+    };
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivmax)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2) {
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(imax)(v1.x, v2.x),
+        .y = ZDF_FUNC(imax)(v1.y, v2.y),
+    };
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivabs)(ZDF_TYPE(Vec2) v) {
+    return (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(iabs)(v.x),
+        .y = ZDF_FUNC(iabs)(v.y),
+    };
+}
+
 ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one) {
     const ZDF_INT len = ZDF_FUNC(ivlen)(v);
     const ZDF_LONG x_ = ZDF_FUNC(imul)(v.x, one);
@@ -258,6 +291,40 @@ ZDF_TYPE(Vec2) ZDF_FUNC(circle_grad)(ZDF_TYPE(Circle) circle, ZDF_TYPE(Vec2) p, 
     return (ZDF_TYPE(Vec2)){
         .x = ZDF_FUNC(lidiv)(nx_, len),
         .y = ZDF_FUNC(lidiv)(ny_, len),
+    };
+}
+
+ZDF_INT ZDF_FUNC(box)(ZDF_TYPE(Box) box, ZDF_TYPE(Vec2) p) {
+    const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(
+        ZDF_FUNC(ivabs)(ZDF_FUNC(ivsub)(p, box.c)),
+        box.r
+    );
+    const ZDF_TYPE(Vec2) dpos = (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(imax)(d.x, 0),
+        .y = ZDF_FUNC(imax)(d.y, 0),
+    };
+    return ZDF_FUNC(ivlen)(dpos)
+        + ZDF_FUNC(imin)(ZDF_FUNC(imax)(d.x, d.y), 0);
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(box_grad)(ZDF_TYPE(Box) box, ZDF_TYPE(Vec2) p, ZDF_INT one) {
+    const ZDF_TYPE(Vec2) p1 = ZDF_FUNC(ivsub)(p, box.c);
+    const ZDF_TYPE(Vec2) d = ZDF_FUNC(ivsub)(ZDF_FUNC(ivabs)(p1), box.r);
+    const ZDF_TYPE(Vec2) sign = (ZDF_TYPE(Vec2)){
+        .x = ZDF_FUNC(iargmax)(0, p1.x, -1, 1),
+        .y = ZDF_FUNC(iargmax)(0, p1.y, -1, 1),
+    };
+    const ZDF_INT dmax = ZDF_FUNC(imax)(d.x, d.y);
+    const ZDF_TYPE(Vec2) ex_grad = ZDF_FUNC(ivnormal)(
+        ZDF_FUNC(ivmax)(d, (ZDF_TYPE(Vec2)){ 0, 0 }),
+        one
+    );
+    const ZDF_TYPE(Vec2) in_grad = (d.x < d.y)
+        ? (ZDF_TYPE(Vec2)){ 0, one }
+        : (ZDF_TYPE(Vec2)){ one, 0 };
+    return (ZDF_TYPE(Vec2)){
+        .x = sign.x * ZDF_FUNC(iargmax)(dmax, 0, ex_grad.x, in_grad.x),
+        .y = sign.y * ZDF_FUNC(iargmax)(dmax, 0, ex_grad.y, in_grad.y),
     };
 }
 
