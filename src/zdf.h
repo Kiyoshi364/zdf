@@ -66,6 +66,9 @@ ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one);
 ZDF_INT ZDF_FUNC(lidiv)(ZDF_LONG a, ZDF_INT b);
 ZDF_INT ZDF_FUNC(lisqrt)(ZDF_LONG n);
 
+// REF: https://iquilezles.org/articles/distfunctions2d/
+// REF: https://iquilezles.org/articles/distgradfunctions2d/
+
 typedef struct {
     ZDF_TYPE(Vec2) c;
     ZDF_INT r;
