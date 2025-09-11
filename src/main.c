@@ -102,10 +102,10 @@ typedef struct {
     ZdfVec2 off;
     int32_t mul;
     int32_t div;
-} Camera2D;
+} CameraTop2D;
 
 static
-ZdfVec2 camera_to_world(const Camera2D camera, uint32_t i, uint32_t j) {
+ZdfVec2 camera_to_world(const CameraTop2D camera, uint32_t i, uint32_t j) {
     const ZdfVec2 v = (ZdfVec2){
         .x = ((int32_t) i)*FIXONE,
         .y = ((int32_t) j)*FIXONE,
@@ -130,7 +130,7 @@ int main(void) {
     uint8_t *palette_idxs = malloc(WIDTH*HEIGHT*sizeof(*palette_idxs));
     assert(palette_idxs);
 
-    const Camera2D camera = (Camera2D){
+    const CameraTop2D camera = (CameraTop2D){
         .off = (ZdfVec2){
             .x = (w - 1)*FIXONE/2,
             .y = (h - 1)*FIXONE/2,
