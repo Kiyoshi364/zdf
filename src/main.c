@@ -35,8 +35,7 @@ void paletteidxs_to_pbm6(FILE *out, const uint8_t indexes[], uint32_t w, uint32_
 
 void distmap_to_canvas(
     const int32_t *distmap, uint32_t w, uint32_t h, uint32_t stride,
-    uint32_t *canvas,
-    uint32_t border
+    uint32_t *canvas
 ) {
     uint32_t max_neg = 0;
     uint32_t max_pos = 0;
@@ -66,9 +65,6 @@ void distmap_to_canvas(
                 b = ud * 0xFF / max_neg;
             } else {
                 r = ud * 0xFF / max_pos;
-            }
-            if (ud < border) {
-                g = (border - ud) * 0xFF / border;
             }
             canvas[idx] = rgb(r, g, b);
         }
@@ -142,7 +138,6 @@ int main(void) {
         .mul = 16,
         .div = h,
     };
-    const uint32_t border = FIXONE*2/8;
 
     const ZdfCircle circles[] = {
         (ZdfCircle){
@@ -206,8 +201,7 @@ int main(void) {
     } else {
         distmap_to_canvas(
             distmap, w, h, w,
-            canvas,
-            border
+            canvas
         );
     }
 
