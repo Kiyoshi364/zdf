@@ -315,17 +315,24 @@ ZDF_TYPE(Vec2) ZDF_FUNC(box_grad)(ZDF_TYPE(Box) box, ZDF_TYPE(Vec2) p, ZDF_INT o
         .y = ZDF_FUNC(iargmax)(0, p1.y, -1, 1),
     };
     const ZDF_INT dmax = ZDF_FUNC(imax)(d.x, d.y);
-    const ZDF_TYPE(Vec2) ex_grad = ZDF_FUNC(ivnormal)(
-        ZDF_FUNC(ivmax)(d, (ZDF_TYPE(Vec2)){ 0, 0 }),
-        one
-    );
-    const ZDF_TYPE(Vec2) in_grad = (d.x < d.y)
-        ? (ZDF_TYPE(Vec2)){ 0, one }
-        : (ZDF_TYPE(Vec2)){ one, 0 };
-    return (ZDF_TYPE(Vec2)){
-        .x = sign.x * ZDF_FUNC(iargmax)(dmax, 0, ex_grad.x, in_grad.x),
-        .y = sign.y * ZDF_FUNC(iargmax)(dmax, 0, ex_grad.y, in_grad.y),
-    };
+    if (0 < dmax) {
+        const ZDF_TYPE(Vec2) ex_grad = ZDF_FUNC(ivnormal)(
+            ZDF_FUNC(ivmax)(d, (ZDF_TYPE(Vec2)){ 0, 0 }),
+            one
+        );
+        return (ZDF_TYPE(Vec2)){
+            .x = sign.x * ex_grad.x,
+            .y = sign.y * ex_grad.y,
+        };
+    } else {
+        const ZDF_TYPE(Vec2) in_grad = (d.x < d.y)
+            ? (ZDF_TYPE(Vec2)){ 0, one }
+            : (ZDF_TYPE(Vec2)){ one, 0 };
+        return (ZDF_TYPE(Vec2)){
+            .x = sign.x * in_grad.x,
+            .y = sign.y * in_grad.y,
+        };
+    }
 }
 
 ZDF_INT ZDF_FUNC(line)(ZDF_TYPE(Line) line, ZDF_TYPE(Vec2) p, ZDF_INT one) {
