@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-int32_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+uint32_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     const uint32_t r_ = (uint32_t) r;
     const uint32_t g_ = (uint32_t) g;
     const uint32_t b_ = (uint32_t) b;
@@ -8,8 +8,20 @@ int32_t rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     return (a_ << (8*3)) | (b_ << (8*2)) | (g_ << (8*1)) | (r_ << (8*0));
 }
 
-int32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
+uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
     return rgba(r, g, b, 0xFF);
+}
+
+uint8_t color_red(uint32_t c) {
+    return (c >> (8*0)) & 0xFF;
+}
+
+uint8_t color_green(uint32_t c) {
+    return (c >> (8*1)) & 0xFF;
+}
+
+uint8_t color_blue(uint32_t c) {
+    return (c >> (8*2)) & 0xFF;
 }
 
 #define ZDF_INT int32_t
