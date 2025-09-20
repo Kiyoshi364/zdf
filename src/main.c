@@ -371,38 +371,43 @@ int main(void) {
         }
     }
 
-    if (1) {
-        gradmap_to_canvas(
-            gradmap, w, h, w,
-            canvas
-        );
-    } else {
+    {
         distmap_to_canvas(
             distmap, w, h, w,
             canvas
         );
-    }
-    camerafp_canvas_overlay(
-        camera_top, camera_fp,
-        canvas, w, h, w
-    );
+        camerafp_canvas_overlay(
+            camera_top, camera_fp,
+            canvas, w, h, w
+        );
 
-    {
-        FILE *out = fopen("img.ppm", "w");
+        FILE *out = fopen("distmap.ppm", "w");
         canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
         fclose(out);
     }
 
-    const uint16_t palette_len = canvas_to_palette(canvas, w, h, w, palette_idxs, w, palette, PALETTE_LEN);
-    assert(0 < palette_len);
-
     {
-        FILE *out = fopen("palette.ppm", "w");
+        const uint16_t palette_len = canvas_to_palette(canvas, w, h, w, palette_idxs, w, palette, PALETTE_LEN);
+        assert(0 < palette_len);
+
+        FILE *out = fopen("palette_distmap.ppm", "w");
         paletteidxs_to_pbm6(out, palette_idxs, w, h, w, UPSCALE, UPSCALE, palette_len);
         fclose(out);
     }
 
     {
+        gradmap_to_canvas(
+            gradmap, w, h, w,
+            canvas
+        );
+
+        FILE *out = fopen("gradmap.ppm", "w");
+        canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
+        fclose(out);
+    }
+
+    {
+        // raycasting
         const ZdfVec2 screen_dir = zdf_ivsub(camera_fp.right_screen, camera_fp.left_screen);
         for (uint32_t i = 0; i < w; i += 1) {
             const ZdfVec2 unnormal_dir = zdf_ivadd(
@@ -428,16 +433,14 @@ int main(void) {
             distmap[i] = dist;
             distmap[w+i] = steps;
         }
-    }
 
-    dists_steps_to_canvas(
-        distmap, distmap + w,
-        canvas, w, h, w,
-        camera_fp.dist_mul, camera_fp.dist_div,
-        rgb(0xFF, 0xFF, 0xFF), rgb(0x18, 0x18, 0xFF)
-    );
+        dists_steps_to_canvas(
+            distmap, distmap + w,
+            canvas, w, h, w,
+            camera_fp.dist_mul, camera_fp.dist_div,
+            rgb(0xFF, 0xFF, 0xFF), rgb(0x18, 0x18, 0xFF)
+        );
 
-    {
         FILE *out = fopen("raycast.ppm", "w");
         canvas_to_pbm6(out, canvas, w, h, w, UPSCALE, UPSCALE);
         fclose(out);
