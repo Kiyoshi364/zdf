@@ -62,6 +62,7 @@ ZDF_LONG ZDF_FUNC(ivdot)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
 ZDF_LONG ZDF_FUNC(ivdot2)(ZDF_TYPE(Vec2) v);
 ZDF_INT ZDF_FUNC(ivlen)(ZDF_TYPE(Vec2) v);
 ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one);
+ZDF_TYPE(Vec2) ZDF_FUNC(ivrot)(ZDF_TYPE(Vec2) v, ZDF_TYPE(Vec2) rot, ZDF_INT one);
 
 ZDF_TYPE(Vec2) ZDF_FUNC(ivmin)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
 ZDF_TYPE(Vec2) ZDF_FUNC(ivmax)(ZDF_TYPE(Vec2) v1, ZDF_TYPE(Vec2) v2);
@@ -151,8 +152,8 @@ ZDF_INT ZDF_FUNC(ilen)(ZDF_INT x, ZDF_INT y) {
 
 ZDF_TYPE(Vec2) ZDF_FUNC(ivscale)(ZDF_TYPE(Vec2) v, int mul, int div) {
     return (ZDF_TYPE(Vec2)){
-        .x = v.x * mul / div,
-        .y = v.y * mul / div,
+        .x = ZDF_FUNC(lidiv)(ZDF_FUNC(imul)(v.x, mul), div),
+        .y = ZDF_FUNC(lidiv)(ZDF_FUNC(imul)(v.y, mul), div),
     };
 }
 
@@ -205,11 +206,17 @@ ZDF_TYPE(Vec2) ZDF_FUNC(ivabs)(ZDF_TYPE(Vec2) v) {
 
 ZDF_TYPE(Vec2) ZDF_FUNC(ivnormal)(ZDF_TYPE(Vec2) v, ZDF_INT one) {
     const ZDF_INT len = ZDF_FUNC(ivlen)(v);
-    const ZDF_LONG x_ = ZDF_FUNC(imul)(v.x, one);
-    const ZDF_LONG y_ = ZDF_FUNC(imul)(v.y, one);
+    return ZDF_FUNC(ivscale)(v, one, len);
+}
+
+ZDF_TYPE(Vec2) ZDF_FUNC(ivrot)(ZDF_TYPE(Vec2) v, ZDF_TYPE(Vec2) rot, ZDF_INT one) {
+    const ZDF_LONG xx = ZDF_FUNC(imul)(v.x, rot.x);
+    const ZDF_LONG xy = ZDF_FUNC(imul)(v.x, rot.y);
+    const ZDF_LONG yx = ZDF_FUNC(imul)(v.y, rot.x);
+    const ZDF_LONG yy = ZDF_FUNC(imul)(v.y, rot.y);
     return (ZDF_TYPE(Vec2)){
-        .x = ZDF_FUNC(lidiv)(x_, len),
-        .y = ZDF_FUNC(lidiv)(y_, len),
+        .x = ZDF_FUNC(lidiv)(xx - yy, one),
+        .y = ZDF_FUNC(lidiv)(xy + yx, one),
     };
 }
 
